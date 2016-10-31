@@ -4,10 +4,9 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
-    "async": "^2.1.2",
-    "lwip": "0.0.9",
-    "msgraph-sdk-javascript": "^0.1.2",
-    "superagent": "^2.3.0"
+    "lwip": "*",
+    "msgraph-sdk-javascript": "*",
+    "superagent": "*"
   },
   "devDependencies": {},
   "scripts": {
