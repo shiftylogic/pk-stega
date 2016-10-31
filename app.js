@@ -3,10 +3,12 @@
 const fs = require('fs');
 const lwip = require('lwip');
 const graph = require('msgraph-sdk-javascript');
+
 const aad = require('./lib/aad');
 const sec = require('./lib/sec');
 const stega = require('./lib/stega');
 const BufferStream = require('./lib/streamie');
+
 const config = require('./config');
 
 const keys = loadKeys();
@@ -106,7 +108,7 @@ function storePublicKey() {
 }
 
 
-storePublicKey();
+//storePublicKey();
 // getDrafts((err, messages) => {
 //     messages.forEach(m => console.log(m.subject));
 //     //signDraft(messages[1]);

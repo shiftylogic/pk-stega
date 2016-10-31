@@ -38,3 +38,6 @@ jspm_packages
 
 # IDE Specific files / directories
 .vscode
+
+# Do not check in config data.
+config.js
