@@ -101,14 +101,16 @@ function storePublicKey() {
     const getData = (err, meta) => {
         if (err) throw err;
         ctx.meta = meta;
-        client.api('/me/photo/$value').getStream(load);
+
+        // v1.0 '$value' for photo is broken so switching to beta for now.
+        client.api('/me/photo/$value').version('beta').getStream(load);
     };
 
     client.api('/me/photo').get(getData);
 }
 
 
-//storePublicKey();
+storePublicKey();
 // getDrafts((err, messages) => {
 //     messages.forEach(m => console.log(m.subject));
 //     //signDraft(messages[1]);
