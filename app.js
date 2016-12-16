@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 'use strict';
 
+const util = require('util');
 const fs = require('fs');
 const lwip = require('lwip');
 const graph = require('msgraph-sdk-javascript');
@@ -38,7 +39,7 @@ const BufferStream = require('./lib/streamie');
 const config = require('./config');
 
 const keys = loadKeys();
-const client = graph.init({
+const client = graph.Client.init({
     authProvider: aad.getAccessToken.bind(null, config.aad),
 })
 
@@ -106,22 +107,54 @@ function storePublicKey() {
         data: '',
     };
 
-    const process = (err, image) => { console.log('  > in process');
+    const upload = (err, image) => { console.log('  > in upload');
         if (err) throw err;
-        console.log(ctx.meta);
-        image.writeFile('bob.jpg', () => console.log("saved"));
+
+        // TODO: Push back to Graph
+
+        const ws = fs.createWriteStream('/Users/robert/src/pub_dude.png');
+        ws.end(image, console.log);
+
+        // console.log(ctx.meta);
+        // image.writeFile('bob.jpg', () => console.log("saved"));
     };
 
-    const load2 = () => { console.log('  > in load2');
-        const buf = new Buffer(ctx.data);
-        lwip.open(buf, process);
+    const injectKey2 = (err, imageData) => { console.log('  > in attach key');
+        if (err) throw err;
+        console.log(keys.pub);
+        // lwip.open(resp.body, 'png', process);
+        stega.encode(imageData, 'png', keys.pub, upload);
     };
 
-    const load = (err, photo) => { console.log('  > in load');
+    const injectKey = (err, imageData) => {
         if (err) throw err;
-        photo.on('data', chunk => ctx.data += chunk);
-        photo.on('err', err => { throw err; });
-        photo.on('end', load2);
+        const ws = fs.createWriteStream('/Users/robert/src/dude.png');
+        ws.end(imageData, () => { console.log("saved"); injectKey2(null, imageData) });
+    };
+
+    const convertToPng = (err, image) => {
+        if (err) throw err;
+        image.toBuffer('png', injectKey);
+    };
+
+    const loadJpeg = (err, resp) => {
+        if (err) throw err;
+        lwip.open(resp.body, 'jpg', convertToPng);
+    };
+
+    const load = (err, photoStream) => { console.log('  > in load');
+        if (err) throw err;
+        photoStream.end(loadJpeg);
+
+        // photoStream.on('close', () => console.log('photo stream closed.'));
+        // photoStream.on('readable', () => console.log('photo stream data incoming...'));
+        // photoStream.on('error', err => { throw err; });
+        // photoStream.on('end', load2);
+        // photoStream.on('data', chunk => { console.log('new chunk...'); ctx.data += chunk });
+        // photoStream.resume();
+
+        // const ws = fs.createWriteStream('/Users/robert/src/dude.jpg');
+        // photoStream.pipe(ws).on('error', console.log);
     };
 
     const getData = (err, meta) => {
@@ -129,14 +162,49 @@ function storePublicKey() {
         ctx.meta = meta;
 
         // v1.0 '$value' for photo is broken so switching to beta for now.
-        client.api('/me/photo/$value').version('beta').getStream(load);
+        client.api('/me/photo/$value').getStream(load);
     };
 
     client.api('/me/photo').get(getData);
 }
-
-
 storePublicKey();
+
+
+function getPublicKey() {
+    const ctx = {
+        data: '',
+    };
+
+    const verifyKey = (err, key) => {
+        if (err) throw err;
+
+        console.log(key);
+    };
+
+    const extractKey = (err, imageBuffer) => {
+        if (err) throw err;
+        console.log(imageBuffer);
+
+        // console.log(ctx.data);
+        // const imageBuffer = Buffer.from(ctx.data);
+
+        stega.decode(imageBuffer, 'png', verifyKey);
+    };
+
+    // TODO: Load image from Graph.
+
+    // const rs = fs.createReadStream('/Users/robert/src/pub_dude.jpg');
+    // rs.on('end', extractKey);
+    // rs.on('error', err => { throw err });
+    // rs.on('data', chunk => ctx.data += chunk);
+
+    lwip.open('/Users/robert/src/pub_dude.png', (err, image) => {
+        if (err) throw err;
+        image.toBuffer('png', extractKey);
+    });
+}
+//getPublicKey();
+
 // getDrafts((err, messages) => {
 //     messages.forEach(m => console.log(m.subject));
 //     //signDraft(messages[1]);
@@ -149,10 +217,10 @@ storePublicKey();
 function loadKeys() {
     return {
         pri: {
-            key: fs.readFileSync('/Users/robert/.signkey'),
-            passphrase: 'boom',
+            key: fs.readFileSync('/Users/robert/src/.signkey'),
+            passphrase: 'hockey',
         },
-        pub: fs.readFileSync('/Users/robert/.verifykey'),
+        pub: fs.readFileSync('/Users/robert/src/.verifykey'),
     }
 }
 
